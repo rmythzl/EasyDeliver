@@ -1,0 +1,95 @@
+{
+    "Comment": "Fluxo de Processamento de Pedido para um App de Delivery",
+    "StartAt": "Verificar Estoque",
+    "States": {
+      "Verificar Estoque": {
+        "Type": "Choice",
+        "Choices": [
+          {
+            "Variable": "$.estoqueDisponivel",
+            "BooleanEquals": true,
+            "Next": "Processar Pagamento"
+          }
+        ],
+        "Default": "Notificar Cliente - Item Indisponível"
+      },
+      "Notificar Cliente - Item Indisponível": {
+        "Type": "Pass",
+        "Result": "Desculpe, o item não está disponível.",
+        "End": true
+      },
+      "Processar Pagamento": {
+        "Type": "Task",
+        "Resource": "arn:aws:lambda:sa-east-1:rmythzl:function:ProcessarPagamento",
+        "Next": "Verificar Pagamento"
+      },
+      "Verificar Pagamento": {
+        "Type": "Choice",
+        "Choices": [
+          {
+            "Variable": "$.pagamentoAprovado",
+            "BooleanEquals": true,
+            "Next": "Atualizar Estoque"
+          }
+        ],
+        "Default": "Notificar Cliente - Pagamento Rejeitado"
+      },
+      "Notificar Cliente - Pagamento Rejeitado": {
+        "Type": "Pass",
+        "Result": "Desculpe, o pagamento não foi aprovado.",
+        "End": true
+      },
+      "Atualizar Estoque": {
+        "Type": "Task",
+        "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:AtualizarEstoque",
+        "Next": "Preparar Pedido"
+      },
+      "Preparar Pedido": {
+        "Type": "Task",
+        "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:PrepararPedido",
+        "Next": "Notificar Cliente - Pedido em Preparação"
+      },
+      "Notificar Cliente - Pedido em Preparação": {
+        "Type": "Pass",
+        "Result": "Seu pedido está em preparação!",
+        "Next": "Atribuir Entregador"
+      },
+      "Atribuir Entregador": {
+        "Type": "Task",
+        "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:AtribuirEntregador",
+        "Next": "Notificar Cliente - Pedido em Rota"
+      },
+      "Notificar Cliente - Pedido em Rota": {
+        "Type": "Pass",
+        "Result": "Seu pedido está a caminho!",
+        "Next": "Monitorar Entrega"
+      },
+      "Monitorar Entrega": {
+        "Type": "Task",
+        "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:MonitorarEntrega",
+        "Next": "Confirmar Entrega"
+      },
+      "Confirmar Entrega": {
+        "Type": "Choice",
+        "Choices": [
+          {
+            "Variable": "$.entregaRealizada",
+            "BooleanEquals": true,
+            "Next": "Notificar Cliente - Pedido Entregue"
+          }
+        ],
+        "Default": "Notificar Cliente - Problema na Entrega"
+      },
+      "Notificar Cliente - Problema na Entrega": {
+        "Type": "Pass",
+        "Result": "Houve um problema com a entrega. Por favor, entre em contato com o suporte.",
+        "End": true
+      },
+      "Notificar Cliente - Pedido Entregue": {
+        "Type": "Pass",
+        "Result": "Pedido entregue com sucesso! Obrigado por escolher nosso serviço.",
+        "End": true
+      }
+    }
+  }
+  
